@@ -8,15 +8,27 @@ services:
           - ./prometheus.yml:/etc/prometheus/prometheus.yml
           - ./alert.rules:/etc/prometheus/alert.rules
         command:
-          - '-config.file=/etc/prometheus/prometheus.yml'
-          - '-storage.local.path=/prometheus'
-          - '-alertmanager.url=http://alertmanager:9093'
+          - '--config.file=/etc/prometheus/prometheus.yml'
+          - '--storage.tsdb.path=/prometheus'
+          - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+          - '--web.console.templates=/usr/share/prometheus/consoles'
         expose:
           - 9090
         ports:
           - 9090:9090
         links:
           - alertmanager:alertmanager
+    nodeexporter:
+        image: quay.io/prometheus/node-exporter:v1.1.2
+        container_name: nodeexporter
+        volumes:
+          - '/:/host:ro,rslave'
+        pid: host
+        command:
+          - '--path.rootfs=/host'
+        restart: unless-stopped
+        ports:
+          - 9100:9100
     alertmanager:
         image: prom/alertmanager
         ports:
@@ -24,8 +36,8 @@ services:
         volumes:
           - ./alertmanager.yml:/etc/alertmanager/config.yml
         command:
-          - '-config.file=/etc/alertmanager/config.yml'
-          - '-storage.path=/alertmanager'
+          - '--config.file=/etc/alertmanager/config.yml'
+          - '--storage.path=/alertmanager'
     grafana:
         image: grafana/grafana
         depends_on:
